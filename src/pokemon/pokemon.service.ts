@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreatePokemonDto } from './dto/create-pokemon.dto';
 import { UpdatePokemonDto } from './dto/update-pokemon.dto';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import { Pokemon } from './entities/pokemon.entity';
 import { InjectModel } from '@nestjs/mongoose';
 
@@ -13,23 +13,68 @@ export class PokemonService {
   ) {}
   async create(createPokemonDto: CreatePokemonDto) {
     createPokemonDto.name = createPokemonDto.name.toLowerCase();
-    const pokemon = await this.pokemonModel.create(createPokemonDto);
-    return pokemon;
+    try {
+      // const pokemon = await this.pokemonModel.create(createPokemonDto);
+      const createPokemon = new this.pokemonModel(createPokemonDto);
+
+      return createPokemon.save();
+    } catch (err) {
+      if (err.code === 11000) {
+        throw new BadRequestException(`Pokemon already exist in the database`);
+      }
+      throw new InternalServerErrorException(`Cannot create Pokemon`);
+    }
   }
 
-  findAll() {
-    return `This action returns all pokemon`;
+  async findAll() {
+    try {
+      const pokemons = await this.pokemonModel.find();
+      return pokemons;
+    } catch (err) {
+      throw new InternalServerErrorException(`Something went wrong try again`);
+    }
+  }
+  async findOne(term: string) {
+    try {
+      let pokemon: Pokemon;
+
+      if (isValidObjectId(term)) {
+        pokemon = await this.pokemonModel.findOne({ id: term });
+      } else {
+        throw new BadRequestException();
+      }
+
+      if (!pokemon) {
+        throw new NotFoundException();
+      }
+      return pokemon;
+    } catch (err) {
+      if (err.status === 404) throw new NotFoundException();
+      if (err.status === 400)
+        throw new BadRequestException('this is not a mongo id');
+
+      throw new InternalServerErrorException();
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} pokemon`;
+  async update(id: string, updatePokemonDto: UpdatePokemonDto) {
+    try {
+      const pokemonUpdated = await this.pokemonModel.findByIdAndUpdate(
+        id,
+        updatePokemonDto,
+        { new: true },
+      );
+
+      if (!pokemonUpdated) {
+        throw new NotFoundException();
+      }
+      return pokemonUpdated;
+    } catch (err) {
+      if (err.code === 404) throw new NotFoundException();
+    }
   }
 
-  update(id: number, updatePokemonDto: UpdatePokemonDto) {
-    return `This action updates a #${id} pokemon`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} pokemon`;
+  async remove(id: string) {
+    return this.pokemonModel.findByIdAndRemove(id);
   }
 }
