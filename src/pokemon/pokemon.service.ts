@@ -73,4 +73,8 @@ export class PokemonService {
   async remove(id: string) {
     return this.pokemonModel.findByIdAndRemove(id);
   }
+
+  async insertSeed(pokemons: CreatePokemonDto[]) {
+    return this.pokemonModel.insertMany(pokemons);
+  }
 }
