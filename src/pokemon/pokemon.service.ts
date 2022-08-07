@@ -9,6 +9,7 @@ import { UpdatePokemonDto } from './dto/update-pokemon.dto';
 import { Model } from 'mongoose';
 import { Pokemon } from './entities/pokemon.entity';
 import { InjectModel } from '@nestjs/mongoose';
+import { PaginatorDto } from '../common/dtos/paginator.dto';
 
 @Injectable()
 export class PokemonService {
@@ -31,10 +32,10 @@ export class PokemonService {
     }
   }
 
-  async findAll() {
+  async findAll(queries: PaginatorDto) {
+    const { limit = 25, offset = 0 } = queries;
     try {
-      const pokemons = await this.pokemonModel.find();
-      return pokemons;
+      return await this.pokemonModel.find().limit(limit).skip(offset);
     } catch (err) {
       throw new InternalServerErrorException(`Something went wrong try again`);
     }
