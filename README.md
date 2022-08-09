@@ -19,7 +19,12 @@ npm install -g nestjs/cli
 ``` 
 docker-compose up -d
 ```
-5. insert seed - This will create data in the database 
+
+5.clone file __.env.template__ and rename to __.env__
+
+
+6.insert seed - This will create data in the database 
 ```
 GET  /api/v2/seed
 ```
+
